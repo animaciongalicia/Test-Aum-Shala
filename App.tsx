@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Questionnaire, QuizResults } from './types';
-import { Layout } from './components/Layout';
-import { StepRenderer } from './components/StepRenderer';
-import { generateRecommendation } from './services/gemini';
+import { Questionnaire, QuizResults } from './types.ts';
+import { Layout } from './components/Layout.tsx';
+import { StepRenderer } from './components/StepRenderer.tsx';
+import { generateRecommendation } from './services/gemini.ts';
 
 const questionnaireData: Questionnaire = {
   "id": "aum-shala-tarde-jueves",
@@ -222,13 +222,12 @@ const App: React.FC = () => {
     setResults(prev => ({ ...prev, [name]: value }));
   };
 
-  // Función para renderizar negritas básicas de markdown
   const renderFormattedText = (text: string | null) => {
     if (!text) return null;
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-bold text-[#2d3b2d] bg-[#e8ede8]/30 px-1 rounded-sm">{part.slice(2, -2)}</strong>;
+        return <strong key={i} className="font-bold text-[#2d3b2d] bg-[#e8ede8]/40 px-1 rounded-md">{part.slice(2, -2)}</strong>;
       }
       return part;
     });

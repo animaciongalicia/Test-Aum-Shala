@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { QuizResults } from "../types";
+import { QuizResults } from "../types.ts";
 
 export const generateRecommendation = async (results: QuizResults): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });

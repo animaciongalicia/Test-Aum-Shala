@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Field, Option } from '../types';
+import { Field, Option } from '../types.ts';
 
 interface StepRendererProps {
   field: Field;
