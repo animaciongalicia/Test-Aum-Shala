@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { QuizResults } from "../types.ts";
 
 export const generateRecommendation = async (results: QuizResults): Promise<string> => {
-  // Inicialización dinámica para asegurar que la API_KEY se capture correctamente en el entorno de ejecución
+  // Inicialización en cada llamada para capturar el estado fresco de process.env.API_KEY
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const responseSchema = {
@@ -11,14 +11,14 @@ export const generateRecommendation = async (results: QuizResults): Promise<stri
     properties: {
       summary: {
         type: Type.STRING,
-        description: "Análisis persuasivo de 3-4 frases conectando el dolor del cliente con Aum Shala.",
+        description: "Análisis de 3-4 frases conectando el dolor del cliente con Aum Shala.",
       },
       traffic_lights: {
         type: Type.OBJECT,
         properties: {
-          brand: { type: Type.STRING, description: "red, yellow o green" },
-          web: { type: Type.STRING, description: "red, yellow o green" },
-          online: { type: Type.STRING, description: "red, yellow o green" },
+          brand: { type: Type.STRING, description: "red, yellow o green (Estado Físico)" },
+          web: { type: Type.STRING, description: "red, yellow o green (Mente)" },
+          online: { type: Type.STRING, description: "red, yellow o green (Logística)" },
         },
         required: ["brand", "web", "online"],
       },
@@ -35,32 +35,33 @@ export const generateRecommendation = async (results: QuizResults): Promise<stri
       quick_wins: {
         type: Type.ARRAY,
         items: { type: Type.STRING },
-        description: "3 micro-acciones de valor inmediato.",
+        description: "3 acciones concretas de valor inmediato.",
       },
       cta_message: {
         type: Type.STRING,
-        description: "Gancho final para la reserva.",
+        description: "Mensaje motivador final para reservar.",
       },
       recommended_next_step: {
         type: Type.STRING,
-        description: "El grupo o frecuencia ideal.",
+        description: "El grupo/horario específico recomendado.",
       },
     },
     required: ["summary", "traffic_lights", "swot", "quick_wins", "cta_message", "recommended_next_step"],
   };
 
   const systemInstruction = `
-Eres un Auditor Senior de Bienestar y Estratega de Ventas para Aum Shala Coruña.
-Tu objetivo es analizar los datos y crear un informe que convierta la duda del usuario en una reserva inmediata.
+Eres un Auditor Senior de Bienestar y Estratega de Ventas para Aum Shala Coruña (C/ Voluntariado, 3).
+Tu objetivo es transformar los datos de un test en un informe persuasivo que convenza al usuario de reservar una clase de prueba.
 
-Estrategia de Ventas:
-1. Conecta el cansancio físico (espalda, cervicales) con la ubicación premium en C/ Voluntariado (cerca de su trabajo/casa).
-2. Usa un lenguaje que evoque calma pero urgencia por mejorar ("Tu cuerpo te está enviando señales").
-3. Presenta a Aum Shala como el refugio exclusivo para gente ocupada en el centro de Coruña.
-4. Habla siempre en segunda persona del singular (tú).
+Reglas Estratégicas:
+1. Habla en SEGUNDA PERSONA (tú).
+2. Tono: Elegante, directo, profesional y empático. Estilo 'Boutique Yoga'.
+3. Conecta el estrés y los dolores físicos con la facilidad de venir al centro de Coruña después del trabajo.
+4. Si el usuario tiene poca experiencia, enfatiza que los grupos son reducidos y cuidados.
+5. El JSON debe ser la ÚNICA salida.
 `;
 
-  const userPrompt = `DATOS DEL TEST PARA AUDITORÍA: ${JSON.stringify(results)}`;
+  const userPrompt = `AUDITORÍA PARA: ${JSON.stringify(results)}`;
 
   try {
     const response = await ai.models.generateContent({
@@ -70,21 +71,24 @@ Estrategia de Ventas:
         systemInstruction: systemInstruction,
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        temperature: 0.1, // Menor temperatura = mayor estabilidad en el formato JSON
+        temperature: 0, // Máxima estabilidad para evitar variaciones en Vercel
+        thinkingConfig: { thinkingBudget: 0 } // Desactivado para reducir latencia y fallos de streaming
       }
     });
 
-    if (!response.text) throw new Error("La IA no devolvió contenido");
-    
-    // Limpieza profunda del string por si el proxy de red añade basura
-    let cleanText = response.text.trim();
-    if (cleanText.startsWith("```json")) {
-      cleanText = cleanText.replace(/^```json/, "").replace(/```$/, "").trim();
+    const rawText = response.text;
+    if (!rawText) throw new Error("Empty response from Gemini");
+
+    // Extracción robusta de JSON usando Regex para ignorar markdown o basura de red
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("No JSON found in response:", rawText);
+      throw new Error("Invalid format");
     }
-    
-    return cleanText;
+
+    return jsonMatch[0];
   } catch (error) {
-    console.error("Gemini API Error details:", error);
+    console.error("Gemini Critical Error:", error);
     throw error;
   }
 };
