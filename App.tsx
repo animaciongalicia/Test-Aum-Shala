@@ -166,8 +166,8 @@ const questionnaireData: Questionnaire = {
     },
     {
       "id": "step-9-resultado",
-      "title": "Informe de Auditoría de Bienestar",
-      "description": "Análisis estratégico personalizado basado en tu perfil.",
+      "title": "Propuesta Estratégica",
+      "description": "Análisis de bienestar y plan de acción para Aum Shala.",
       "fields": [],
       "ui": { "showBack": false, "showNext": false, "ctaLabel": "" }
     }
@@ -200,7 +200,12 @@ const App: React.FC = () => {
         setReport(JSON.parse(rawResponse));
       } catch (e) {
         console.error("Error generating report", e);
-        setReport({ summary: "Hubo un problema generando tu informe detallado. Por favor, contacta con nosotros directamente por WhatsApp para recibir tu propuesta personalizada." });
+        setReport({ 
+          summary: "Parece que hay un retraso en la red. No te preocupes, hemos recibido tus respuestas.",
+          cta_message: "Haz clic abajo para que revisemos tu caso personalmente y te reservemos tu plaza de prueba.",
+          quick_wins: ["Respira profundo", "Mueve tus hombros", "Escríbenos por WhatsApp"],
+          recommended_next_step: "Contactar por WhatsApp ahora mismo."
+        });
       } finally {
         setIsLoading(false);
       }
@@ -230,7 +235,7 @@ const App: React.FC = () => {
         <div className="space-y-2">
           {isResultStep ? (
             <div className="flex items-center gap-3 mb-2 animate-fadeIn">
-              <span className="bg-[#e8ede8] text-[#3d4f3d] text-[10px] uppercase font-bold px-3 py-1 rounded-full tracking-wider">Resultado Auditoría</span>
+              <span className="bg-[#e8ede8] text-[#3d4f3d] text-[10px] uppercase font-bold px-3 py-1 rounded-full tracking-wider">Plan Personalizado</span>
             </div>
           ) : (
             <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">
@@ -257,26 +262,26 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-center space-y-2">
-                    <p className="text-[#3d4f3d] font-serif italic text-xl">Auditando tu bienestar...</p>
-                    <p className="text-gray-400 text-xs uppercase tracking-widest">Creando plan estratégico</p>
+                    <p className="text-[#3d4f3d] font-serif italic text-xl">Preparando tu plan estratégico...</p>
+                    <p className="text-gray-400 text-xs uppercase tracking-widest">Aum Shala Coruña</p>
                   </div>
                 </div>
               ) : report && (
                 <div className="animate-fadeIn space-y-8">
-                   {/* Resumen Ejecutivo */}
+                   {/* Resumen Persuasivo */}
                    <div className="flex flex-col items-center justify-center py-2">
                      <p className="text-[#3d4f3d] font-serif italic text-lg leading-relaxed border-b border-[#e8ede8] pb-8 text-center max-w-md">
                        {report.summary}
                      </p>
                    </div>
 
-                   {/* Semáforos Visuales Seguros */}
+                   {/* Indicadores Visuales */}
                    {report.traffic_lights && (
                      <div className="grid grid-cols-3 gap-3">
                        {[
-                         { label: 'Físico', light: report.traffic_lights.brand },
-                         { label: 'Mental', light: report.traffic_lights.web },
-                         { label: 'Hábitos', light: report.traffic_lights.online }
+                         { label: 'Cuerpo', light: report.traffic_lights.brand },
+                         { label: 'Mente', light: report.traffic_lights.web },
+                         { label: 'Rutina', light: report.traffic_lights.online }
                        ].map((item, idx) => (
                          <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 text-center shadow-sm">
                            <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${item.light === 'green' ? 'bg-green-400' : item.light === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
@@ -286,31 +291,31 @@ const App: React.FC = () => {
                      </div>
                    )}
 
-                   {/* DAFO Seguro */}
+                   {/* DAFO Estratégico */}
                    {report.swot && (
                      <div className="space-y-4">
-                       <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Análisis DAFO de Bienestar</h3>
+                       <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Análisis Estratégico</h3>
                        <div className="grid grid-cols-2 gap-3">
                          <div className="bg-green-50/40 p-4 rounded-2xl border border-green-100/30">
-                           <span className="text-[9px] font-bold text-green-700 uppercase block mb-2">Fortalezas</span>
+                           <span className="text-[9px] font-bold text-green-700 uppercase block mb-2">Potencial</span>
                            <ul className="text-[11px] text-green-900 space-y-1">
-                             {report.swot.strengths?.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                             {report.swot.strengths?.slice(0, 2).map((s: string, i: number) => <li key={i}>• {s}</li>)}
                            </ul>
                          </div>
                          <div className="bg-red-50/40 p-4 rounded-2xl border border-red-100/30">
-                           <span className="text-[9px] font-bold text-red-700 uppercase block mb-2">Debilidades</span>
+                           <span className="text-[9px] font-bold text-red-700 uppercase block mb-2">Riesgos</span>
                            <ul className="text-[11px] text-red-900 space-y-1">
-                             {report.swot.weaknesses?.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                             {report.swot.weaknesses?.slice(0, 2).map((s: string, i: number) => <li key={i}>• {s}</li>)}
                            </ul>
                          </div>
                        </div>
                      </div>
                    )}
 
-                   {/* Quick Wins Seguro */}
+                   {/* Quick Wins */}
                    {report.quick_wins && (
                      <div className="bg-[#4a5d4a] text-white p-6 rounded-3xl space-y-4 shadow-xl shadow-[#4a5d4a]/10">
-                       <h3 className="text-lg font-serif italic">Acciones Recomendadas (30 días)</h3>
+                       <h3 className="text-lg font-serif italic">Para empezar HOY:</h3>
                        <div className="space-y-3">
                           {report.quick_wins.map((win: string, i: number) => (
                             <div key={i} className="flex gap-3 items-start">
@@ -322,19 +327,22 @@ const App: React.FC = () => {
                      </div>
                    )}
 
-                   {/* CTA Final */}
+                   {/* CTA Final y Cierre */}
                    <div className="pt-6 text-center space-y-6">
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-[#3d4f3d]">{report.cta_message}</p>
                         {report.recommended_next_step && (
-                          <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">Siguiente paso: {report.recommended_next_step}</p>
+                          <p className="text-[10px] text-[#4a5d4a] bg-[#e8ede8] inline-block px-4 py-1 rounded-full uppercase tracking-widest font-bold">
+                            {report.recommended_next_step}
+                          </p>
                         )}
                       </div>
                       <button 
                         onClick={() => window.open('https://wa.me/34664234565', '_blank')}
-                        className="w-full bg-[#4a5d4a] text-white py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-[#4a5d4a]/20 hover:scale-[1.02] transition-transform"
+                        className="w-full bg-[#4a5d4a] text-white py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-[#4a5d4a]/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-3"
                       >
-                        Reservar Clase de Prueba Ahora
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.319 1.592 5.448 0 9.886-4.438 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.815-.981z"/></svg>
+                        RESERVAR MI SESIÓN DE PRUEBA
                       </button>
                       <button onClick={() => window.location.reload()} className="text-[9px] text-gray-400 uppercase tracking-widest underline decoration-gray-200">Volver a empezar</button>
                    </div>
