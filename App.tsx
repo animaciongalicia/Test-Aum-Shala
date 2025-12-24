@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Questionnaire, QuizResults } from './types.ts';
 import { Layout } from './components/Layout.tsx';
 import { StepRenderer } from './components/StepRenderer.tsx';
@@ -166,8 +166,8 @@ const questionnaireData: Questionnaire = {
     },
     {
       "id": "step-9-resultado",
-      "title": "Tu camino en Aum Shala",
-      "description": "Aquí tienes lo que más se adapta a tus necesidades.",
+      "title": "Informe de Auditoría de Bienestar",
+      "description": "Análisis estratégico personalizado basado en tu perfil.",
       "fields": [],
       "ui": { "showBack": false, "showNext": false, "ctaLabel": "" }
     }
@@ -177,7 +177,7 @@ const questionnaireData: Questionnaire = {
 const App: React.FC = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [results, setResults] = useState<QuizResults>({});
-  const [recommendation, setRecommendation] = useState<string | null>(null);
+  const [report, setReport] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const currentStep = questionnaireData.steps[currentStepIndex];
@@ -196,10 +196,11 @@ const App: React.FC = () => {
       setIsLoading(true);
       setCurrentStepIndex(currentStepIndex + 1);
       try {
-        const rec = await generateRecommendation(results);
-        setRecommendation(rec);
+        const rawResponse = await generateRecommendation(results);
+        setReport(JSON.parse(rawResponse));
       } catch (e) {
-        setRecommendation("Gracias por tu confianza. Te enviaremos una propuesta personalizada a tu email pronto.");
+        console.error("Error generating report", e);
+        setReport({ summary: "Hubo un problema generando tu informe. Por favor, contacta con nosotros directamente." });
       } finally {
         setIsLoading(false);
       }
@@ -208,29 +209,8 @@ const App: React.FC = () => {
     }
   };
 
-  const resetQuiz = () => {
-    setCurrentStepIndex(0);
-    setResults({});
-    setRecommendation(null);
-  };
-
-  const handleBack = () => {
-    if (currentStepIndex > 0) setCurrentStepIndex(currentStepIndex - 1);
-  };
-
   const updateResult = (name: string, value: any) => {
     setResults(prev => ({ ...prev, [name]: value }));
-  };
-
-  const renderFormattedText = (text: string | null) => {
-    if (!text) return null;
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-bold text-[#2d3b2d] bg-[#e8ede8]/40 px-1 rounded-md">{part.slice(2, -2)}</strong>;
-      }
-      return part;
-    });
   };
 
   const isResultStep = currentStep.id === 'step-9-resultado';
@@ -250,7 +230,7 @@ const App: React.FC = () => {
         <div className="space-y-2">
           {isResultStep ? (
             <div className="flex items-center gap-3 mb-2 animate-fadeIn">
-              <span className="bg-[#e8ede8] text-[#3d4f3d] text-[10px] uppercase font-bold px-3 py-1 rounded-full tracking-wider">Tu Propuesta</span>
+              <span className="bg-[#e8ede8] text-[#3d4f3d] text-[10px] uppercase font-bold px-3 py-1 rounded-full tracking-wider">Resultado Auditoría</span>
             </div>
           ) : (
             <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">
@@ -267,7 +247,7 @@ const App: React.FC = () => {
 
         <div className="py-2 space-y-6">
           {isResultStep ? (
-            <div className="bg-[#fcfbf7]/80 rounded-3xl p-6 md:p-8 min-h-[300px] relative">
+            <div className="min-h-[400px]">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-8">
                   <div className="relative flex items-center justify-center">
@@ -277,38 +257,79 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-center space-y-2">
-                    <p className="text-[#3d4f3d] font-serif italic text-xl">Respira...</p>
-                    <p className="text-gray-400 text-xs uppercase tracking-widest">Creando tu espacio de calma</p>
+                    <p className="text-[#3d4f3d] font-serif italic text-xl">Auditando tu bienestar...</p>
+                    <p className="text-gray-400 text-xs uppercase tracking-widest">Creando plan estratégico</p>
                   </div>
                 </div>
-              ) : (
-                <div className="animate-fadeIn">
-                  <div className="whitespace-pre-wrap text-[#3d4f3d] leading-relaxed italic text-lg md:text-xl font-serif mb-10">
-                    {renderFormattedText(recommendation)}
-                  </div>
-                  
-                  <div className="mt-10 pt-10 border-t border-[#e8ede8] space-y-8 text-center">
-                    <div className="space-y-3">
-                      <h4 className="text-[#3d4f3d] font-serif text-2xl italic">¿Damos el primer paso?</h4>
-                      <p className="text-sm text-gray-500 max-w-sm mx-auto">
-                        Te contactaremos para concretar tu clase de prueba. Si tienes cualquier duda, estamos aquí:
-                      </p>
-                    </div>
+              ) : report && (
+                <div className="animate-fadeIn space-y-8">
+                   {/* Resumen Ejecutivo (Score eliminado) */}
+                   <div className="flex flex-col items-center justify-center py-2">
+                     <p className="text-[#3d4f3d] font-serif italic text-lg leading-relaxed border-b border-[#e8ede8] pb-8 text-center max-w-md">
+                       {report.summary}
+                     </p>
+                   </div>
 
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-50 space-y-3">
-                      <p className="text-xs uppercase tracking-widest text-gray-400">Contacto Directo</p>
-                      <p className="text-[#3d4f3d] font-medium">+34 664 234 565</p>
-                      <p className="text-[#3d4f3d] font-medium underline">info@aumshala.com</p>
-                      <p className="text-gray-400 text-[11px] pt-2">C/ Voluntariado, 3 – 1°izq – 15003 – A Coruña</p>
-                    </div>
+                   {/* Semáforos Visuales */}
+                   <div className="grid grid-cols-3 gap-3">
+                     {[
+                       { label: 'Físico', score: report.brand_score, light: report.traffic_lights.brand },
+                       { label: 'Mental', score: report.web_score, light: report.traffic_lights.web },
+                       { label: 'Hábitos', score: report.online_score, light: report.traffic_lights.online }
+                     ].map((item, idx) => (
+                       <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 text-center shadow-sm">
+                         <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${item.light === 'green' ? 'bg-green-400' : item.light === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                         <div className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">{item.label}</div>
+                       </div>
+                     ))}
+                   </div>
 
-                    <button 
-                      onClick={resetQuiz}
-                      className="w-full bg-[#4a5d4a] text-white py-5 rounded-2xl font-semibold shadow-lg shadow-[#4a5d4a]/20 hover:bg-[#3d4f3d] transition-all active:scale-[0.98] text-sm uppercase tracking-widest"
-                    >
-                      Realizar el test de nuevo
-                    </button>
-                  </div>
+                   {/* DAFO */}
+                   <div className="space-y-4">
+                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Análisis DAFO de Bienestar</h3>
+                     <div className="grid grid-cols-2 gap-3">
+                       <div className="bg-green-50/40 p-4 rounded-2xl border border-green-100/30">
+                         <span className="text-[9px] font-bold text-green-700 uppercase block mb-2">Fortalezas</span>
+                         <ul className="text-[11px] text-green-900 space-y-1">
+                           {report.swot.strengths.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                         </ul>
+                       </div>
+                       <div className="bg-red-50/40 p-4 rounded-2xl border border-red-100/30">
+                         <span className="text-[9px] font-bold text-red-700 uppercase block mb-2">Debilidades</span>
+                         <ul className="text-[11px] text-red-900 space-y-1">
+                           {report.swot.weaknesses.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                         </ul>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Quick Wins */}
+                   <div className="bg-[#4a5d4a] text-white p-6 rounded-3xl space-y-4 shadow-xl shadow-[#4a5d4a]/10">
+                     <h3 className="text-lg font-serif italic">Acciones Recomendadas (30 días)</h3>
+                     <div className="space-y-3">
+                        {report.quick_wins.map((win: string, i: number) => (
+                          <div key={i} className="flex gap-3 items-start">
+                            <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-bold">{i+1}</span>
+                            <p className="text-xs opacity-95">{win}</p>
+                          </div>
+                        ))}
+                     </div>
+                   </div>
+
+                   {/* CTA Final */}
+                   <div className="pt-6 text-center space-y-6">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-[#3d4f3d]">{report.cta_message}</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">Siguiente paso: {report.recommended_next_step}</p>
+                      </div>
+                      <button 
+                        onClick={() => window.open('https://wa.me/34664234565', '_blank')}
+                        className="w-full bg-[#4a5d4a] text-white py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-[#4a5d4a]/20 hover:scale-[1.02] transition-transform"
+                      >
+                        Reservar Clase de Prueba Ahora
+                      </button>
+                      <button onClick={() => window.location.reload()} className="text-[9px] text-gray-400 uppercase tracking-widest underline decoration-gray-200">Volver a empezar</button>
+                   </div>
                 </div>
               )}
             </div>
@@ -328,7 +349,7 @@ const App: React.FC = () => {
           <div className="flex gap-4 pt-6">
             {currentStep.ui.showBack && (
               <button
-                onClick={handleBack}
+                onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
                 className="flex-1 px-6 py-5 rounded-2xl border border-gray-200 text-gray-400 font-medium hover:bg-gray-50 transition-all flex items-center justify-center"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
@@ -337,7 +358,7 @@ const App: React.FC = () => {
             {currentStep.ui.showNext && (
               <button
                 onClick={handleNext}
-                className="flex-[4] px-6 py-5 rounded-2xl bg-[#4a5d4a] text-white font-semibold shadow-xl shadow-[#4a5d4a]/10 hover:bg-[#3d4f3d] transition-all active:scale-[0.98] flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
+                className="flex-[4] px-6 py-5 rounded-2xl bg-[#4a5d4a] text-white font-semibold shadow-xl shadow-[#4a5d4a]/10 hover:bg-[#3d4f3d] transition-all active:scale-[0.98] flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]"
               >
                 {currentStep.ui.ctaLabel}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
@@ -346,16 +367,6 @@ const App: React.FC = () => {
           </div>
         )}
       </div>
-
-      {!isResultStep && currentStepIndex === 0 && (
-        <div className="mt-10 flex items-center justify-center gap-8 text-gray-300">
-           <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Cercanía</span>
-           <span className="text-gray-200">|</span>
-           <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Calma</span>
-           <span className="text-gray-200">|</span>
-           <span className="text-[9px] font-bold uppercase tracking-[0.3em]">Equilibrio</span>
-        </div>
-      )}
     </Layout>
   );
 };
