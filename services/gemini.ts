@@ -52,7 +52,11 @@ NO añadas texto fuera del JSON.
         temperature: 0.7,
       }
     });
-    return response.text || "{}";
+
+    let text = response.text || "{}";
+    // Limpieza de posibles bloques de código markdown que rompen JSON.parse
+    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return text;
   } catch (error) {
     console.error("Error generating recommendation:", error);
     throw error;

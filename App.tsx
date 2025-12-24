@@ -200,7 +200,7 @@ const App: React.FC = () => {
         setReport(JSON.parse(rawResponse));
       } catch (e) {
         console.error("Error generating report", e);
-        setReport({ summary: "Hubo un problema generando tu informe. Por favor, contacta con nosotros directamente." });
+        setReport({ summary: "Hubo un problema generando tu informe detallado. Por favor, contacta con nosotros directamente por WhatsApp para recibir tu propuesta personalizada." });
       } finally {
         setIsLoading(false);
       }
@@ -263,64 +263,72 @@ const App: React.FC = () => {
                 </div>
               ) : report && (
                 <div className="animate-fadeIn space-y-8">
-                   {/* Resumen Ejecutivo (Score eliminado) */}
+                   {/* Resumen Ejecutivo */}
                    <div className="flex flex-col items-center justify-center py-2">
                      <p className="text-[#3d4f3d] font-serif italic text-lg leading-relaxed border-b border-[#e8ede8] pb-8 text-center max-w-md">
                        {report.summary}
                      </p>
                    </div>
 
-                   {/* Semáforos Visuales */}
-                   <div className="grid grid-cols-3 gap-3">
-                     {[
-                       { label: 'Físico', score: report.brand_score, light: report.traffic_lights.brand },
-                       { label: 'Mental', score: report.web_score, light: report.traffic_lights.web },
-                       { label: 'Hábitos', score: report.online_score, light: report.traffic_lights.online }
-                     ].map((item, idx) => (
-                       <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 text-center shadow-sm">
-                         <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${item.light === 'green' ? 'bg-green-400' : item.light === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
-                         <div className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">{item.label}</div>
-                       </div>
-                     ))}
-                   </div>
+                   {/* Semáforos Visuales Seguros */}
+                   {report.traffic_lights && (
+                     <div className="grid grid-cols-3 gap-3">
+                       {[
+                         { label: 'Físico', light: report.traffic_lights.brand },
+                         { label: 'Mental', light: report.traffic_lights.web },
+                         { label: 'Hábitos', light: report.traffic_lights.online }
+                       ].map((item, idx) => (
+                         <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 text-center shadow-sm">
+                           <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${item.light === 'green' ? 'bg-green-400' : item.light === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                           <div className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">{item.label}</div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
 
-                   {/* DAFO */}
-                   <div className="space-y-4">
-                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Análisis DAFO de Bienestar</h3>
-                     <div className="grid grid-cols-2 gap-3">
-                       <div className="bg-green-50/40 p-4 rounded-2xl border border-green-100/30">
-                         <span className="text-[9px] font-bold text-green-700 uppercase block mb-2">Fortalezas</span>
-                         <ul className="text-[11px] text-green-900 space-y-1">
-                           {report.swot.strengths.map((s: string, i: number) => <li key={i}>• {s}</li>)}
-                         </ul>
-                       </div>
-                       <div className="bg-red-50/40 p-4 rounded-2xl border border-red-100/30">
-                         <span className="text-[9px] font-bold text-red-700 uppercase block mb-2">Debilidades</span>
-                         <ul className="text-[11px] text-red-900 space-y-1">
-                           {report.swot.weaknesses.map((s: string, i: number) => <li key={i}>• {s}</li>)}
-                         </ul>
+                   {/* DAFO Seguro */}
+                   {report.swot && (
+                     <div className="space-y-4">
+                       <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Análisis DAFO de Bienestar</h3>
+                       <div className="grid grid-cols-2 gap-3">
+                         <div className="bg-green-50/40 p-4 rounded-2xl border border-green-100/30">
+                           <span className="text-[9px] font-bold text-green-700 uppercase block mb-2">Fortalezas</span>
+                           <ul className="text-[11px] text-green-900 space-y-1">
+                             {report.swot.strengths?.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                           </ul>
+                         </div>
+                         <div className="bg-red-50/40 p-4 rounded-2xl border border-red-100/30">
+                           <span className="text-[9px] font-bold text-red-700 uppercase block mb-2">Debilidades</span>
+                           <ul className="text-[11px] text-red-900 space-y-1">
+                             {report.swot.weaknesses?.map((s: string, i: number) => <li key={i}>• {s}</li>)}
+                           </ul>
+                         </div>
                        </div>
                      </div>
-                   </div>
+                   )}
 
-                   {/* Quick Wins */}
-                   <div className="bg-[#4a5d4a] text-white p-6 rounded-3xl space-y-4 shadow-xl shadow-[#4a5d4a]/10">
-                     <h3 className="text-lg font-serif italic">Acciones Recomendadas (30 días)</h3>
-                     <div className="space-y-3">
-                        {report.quick_wins.map((win: string, i: number) => (
-                          <div key={i} className="flex gap-3 items-start">
-                            <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-bold">{i+1}</span>
-                            <p className="text-xs opacity-95">{win}</p>
-                          </div>
-                        ))}
+                   {/* Quick Wins Seguro */}
+                   {report.quick_wins && (
+                     <div className="bg-[#4a5d4a] text-white p-6 rounded-3xl space-y-4 shadow-xl shadow-[#4a5d4a]/10">
+                       <h3 className="text-lg font-serif italic">Acciones Recomendadas (30 días)</h3>
+                       <div className="space-y-3">
+                          {report.quick_wins.map((win: string, i: number) => (
+                            <div key={i} className="flex gap-3 items-start">
+                              <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-bold">{i+1}</span>
+                              <p className="text-xs opacity-95">{win}</p>
+                            </div>
+                          ))}
+                       </div>
                      </div>
-                   </div>
+                   )}
 
                    {/* CTA Final */}
                    <div className="pt-6 text-center space-y-6">
                       <div className="space-y-2">
                         <p className="text-sm font-medium text-[#3d4f3d]">{report.cta_message}</p>
-                        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">Siguiente paso: {report.recommended_next_step}</p>
+                        {report.recommended_next_step && (
+                          <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">Siguiente paso: {report.recommended_next_step}</p>
+                        )}
                       </div>
                       <button 
                         onClick={() => window.open('https://wa.me/34664234565', '_blank')}
