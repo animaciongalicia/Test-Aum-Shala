@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Questionnaire, QuizResults } from './types.ts';
 import { Layout } from './components/Layout.tsx';
 import { StepRenderer } from './components/StepRenderer.tsx';
@@ -166,8 +166,8 @@ const questionnaireData: Questionnaire = {
     },
     {
       "id": "step-9-resultado",
-      "title": "Informe de Auditoría",
-      "description": "Resultados de tu análisis de bienestar.",
+      "title": "Auditoría de Bienestar",
+      "description": "Análisis estratégico personalizado.",
       "fields": [],
       "ui": { "showBack": false, "showNext": false, "ctaLabel": "" }
     }
@@ -179,9 +179,29 @@ const App: React.FC = () => {
   const [results, setResults] = useState<QuizResults>({});
   const [report, setReport] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
 
   const currentStep = questionnaireData.steps[currentStepIndex];
   const progress = ((currentStepIndex) / (questionnaireData.steps.length - 1)) * 100;
+
+  const loadingMessages = [
+    "Conectando con tu ritmo...",
+    "Analizando tensiones musculares...",
+    "Evaluando disponibilidad de grupos...",
+    "Personalizando tu plan de calma...",
+    "Finalizando auditoría boutique..."
+  ];
+
+  // Efecto para animar los mensajes de carga
+  useEffect(() => {
+    let interval: any;
+    if (isLoading) {
+      interval = setInterval(() => {
+        setLoadingStep(prev => (prev + 1) % loadingMessages.length);
+      }, 800);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const handleNext = async () => {
     const currentFields = currentStep.fields;
@@ -195,21 +215,34 @@ const App: React.FC = () => {
     if (currentStepIndex === questionnaireData.steps.length - 2) {
       setIsLoading(true);
       setCurrentStepIndex(currentStepIndex + 1);
+      
+      const startTime = Date.now();
+      
       try {
         const rawResponse = await generateRecommendation(results);
         const parsedReport = JSON.parse(rawResponse);
-        setReport(parsedReport);
-      } catch (e) {
-        console.error("Critical error generating report:", e);
-        setReport({ 
-          summary: "Análisis completado. Tu perfil sugiere que necesitas una pausa real para reajustar tu cuerpo y mente.",
-          cta_message: "Escríbenos directamente para que podamos darte tu diagnóstico personalizado a mano.",
-          quick_wins: ["Respira profundamente 5 veces", "Suelta los hombros", "Reserva tu clase de prueba"],
-          traffic_lights: { brand: 'yellow', web: 'yellow', online: 'green' },
-          recommended_next_step: "Hablar por WhatsApp con el equipo."
-        });
-      } finally {
-        setIsLoading(false);
+        
+        const elapsedTime = Date.now() - startTime;
+        const minimumWait = 3500; // Aseguramos que la carga se vea en Vercel
+        const delay = Math.max(0, minimumWait - elapsedTime);
+        
+        setTimeout(() => {
+          setReport(parsedReport);
+          setIsLoading(false);
+        }, delay);
+
+      } catch (e: any) {
+        console.error("Error crítico:", e);
+        setTimeout(() => {
+          setReport({ 
+            summary: "Error de conexión con la IA. Es posible que la API_KEY no esté configurada correctamente en el entorno de Vercel.",
+            cta_message: "Por favor, contacta directamente con Aum Shala por WhatsApp para resolver tu duda manualmente.",
+            quick_wins: ["Verifica tu conexión", "Escríbenos un WhatsApp", "Vuelve a intentarlo en unos minutos"],
+            traffic_lights: { brand: 'red', web: 'red', online: 'red' },
+            recommended_next_step: "Contactar soporte técnico o vía WhatsApp."
+          });
+          setIsLoading(false);
+        }, 1500);
       }
     } else if (currentStepIndex < questionnaireData.steps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
@@ -225,9 +258,9 @@ const App: React.FC = () => {
   return (
     <Layout>
       {!isResultStep && (
-        <div className="absolute top-0 left-0 w-full h-1 bg-gray-50">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gray-50/50">
           <div 
-            className="h-full bg-[#4a5d4a] transition-all duration-700 ease-in-out" 
+            className="h-full bg-[#4a5d4a] transition-all duration-1000 ease-in-out" 
             style={{ width: `${progress}%` }}
           ></div>
         </div>
@@ -237,97 +270,112 @@ const App: React.FC = () => {
         <div className="space-y-2">
           {isResultStep ? (
             <div className="flex items-center gap-3 mb-2 animate-fadeIn">
-              <span className="bg-[#e8ede8] text-[#3d4f3d] text-[10px] uppercase font-bold px-3 py-1 rounded-full tracking-wider">Plan Estratégico</span>
+              <span className="bg-[#e8ede8] text-[#3d4f3d] text-[10px] uppercase font-bold px-3 py-1 rounded-full tracking-[0.3em]">Aum Shala Auditoría</span>
             </div>
           ) : (
             <span className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">
               Paso {currentStepIndex + 1} de {questionnaireData.steps.length - 1}
             </span>
           )}
-          <h2 className="text-2xl md:text-3xl font-serif text-[#3d4f3d] leading-tight">
-            {currentStep.title}
+          
+          <h2 className={`text-2xl md:text-3xl font-serif text-[#3d4f3d] leading-tight transition-all duration-700 ${isLoading ? 'text-center opacity-50' : ''}`}>
+            {isLoading ? "Un momento de calma..." : currentStep.title}
           </h2>
-          <p className="text-gray-500 text-sm md:text-base leading-relaxed font-light">
-            {currentStep.description}
-          </p>
+          
+          {!isLoading && (
+            <p className="text-gray-500 text-sm md:text-base leading-relaxed font-light animate-fadeIn">
+              {currentStep.description}
+            </p>
+          )}
         </div>
 
         <div className="py-2 space-y-6">
           {isResultStep ? (
-            <div className="min-h-[400px]">
+            <div className="min-h-[500px] flex flex-col justify-center">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-8 animate-fadeIn">
+                <div className="flex flex-col items-center justify-center py-20 gap-10 animate-fadeIn">
                   <div className="relative flex items-center justify-center">
-                    <div className="absolute w-24 h-24 bg-[#e8ede8] rounded-full animate-breathe"></div>
-                    <div className="relative w-12 h-12 bg-[#4a5d4a]/20 rounded-full flex items-center justify-center">
-                       <div className="w-4 h-4 bg-[#4a5d4a] rounded-full"></div>
+                    <div className="absolute w-36 h-36 bg-[#e8ede8] rounded-full animate-breathe"></div>
+                    <div className="absolute w-24 h-24 bg-[#4a5d4a]/5 rounded-full animate-breathe" style={{ animationDelay: '1.5s' }}></div>
+                    <div className="relative w-16 h-16 bg-[#4a5d4a]/10 rounded-full flex items-center justify-center border border-[#4a5d4a]/20 backdrop-blur-sm">
+                       <div className="w-5 h-5 bg-[#4a5d4a] rounded-full shadow-lg shadow-[#4a5d4a]/40"></div>
                     </div>
                   </div>
-                  <div className="text-center space-y-2">
-                    <p className="text-[#3d4f3d] font-serif italic text-xl">Auditando tu bienestar...</p>
-                    <p className="text-gray-400 text-[10px] uppercase tracking-widest font-bold">Aum Shala Coruña</p>
+                  <div className="text-center space-y-4 max-w-xs mx-auto">
+                    <p className="text-[#3d4f3d] font-serif italic text-2xl transition-all duration-500">{loadingMessages[loadingStep]}</p>
+                    <p className="text-gray-400 text-[10px] uppercase tracking-[0.4em] font-bold mt-4 opacity-60">Auditoría en curso</p>
                   </div>
                 </div>
               ) : report && (
-                <div className="animate-fadeIn space-y-8">
-                   {/* Resumen Persuasivo */}
-                   <div className="flex flex-col items-center justify-center py-2">
-                     <p className="text-[#3d4f3d] font-serif italic text-lg leading-relaxed border-b border-[#e8ede8] pb-8 text-center max-w-md">
+                <div className="animate-fadeIn space-y-12">
+                   {/* Mensaje de la IA */}
+                   <div className="text-center py-6 relative">
+                     <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[50px] text-[#e8ede8] font-serif opacity-60 italic">“</span>
+                     <p className="text-[#3d4f3d] font-serif italic text-xl md:text-2xl leading-relaxed px-6 relative z-10">
                        {report.summary}
                      </p>
+                     <span className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-[50px] text-[#e8ede8] font-serif opacity-60 italic rotate-180">“</span>
                    </div>
 
-                   {/* Semáforos de Auditoría */}
+                   {/* Semáforos */}
                    {report.traffic_lights && (
-                     <div className="grid grid-cols-3 gap-3">
+                     <div className="grid grid-cols-3 gap-5 pt-10">
                        {[
                          { label: 'Cuerpo', light: report.traffic_lights.brand },
                          { label: 'Mente', light: report.traffic_lights.web },
-                         { label: 'Hábitos', light: report.traffic_lights.online }
+                         { label: 'Rutina', light: report.traffic_lights.online }
                        ].map((item, idx) => (
-                         <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 text-center shadow-sm">
-                           <div className={`w-3 h-3 rounded-full mx-auto mb-2 ${item.light === 'green' ? 'bg-green-400' : item.light === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
-                           <div className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">{item.label}</div>
+                         <div key={idx} className="bg-white p-6 rounded-[2.5rem] border border-gray-50 text-center shadow-sm hover:shadow-lg transition-all duration-500">
+                           <div className={`w-4 h-4 rounded-full mx-auto mb-4 shadow-inner ${item.light === 'green' ? 'bg-green-400' : item.light === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                           <div className="text-[10px] uppercase tracking-[0.25em] text-gray-400 font-extrabold">{item.label}</div>
                          </div>
                        ))}
                      </div>
                    )}
 
-                   {/* Quick Wins - El Gancho de Valor */}
+                   {/* Plan de Acción */}
                    {report.quick_wins && (
-                     <div className="bg-[#4a5d4a] text-white p-6 rounded-3xl space-y-4 shadow-xl shadow-[#4a5d4a]/10">
-                       <h3 className="text-lg font-serif italic">Prioridades para ti (30 días):</h3>
-                       <div className="space-y-3">
+                     <div className="bg-[#4a5d4a] text-white p-10 md:p-12 rounded-[3rem] space-y-8 shadow-2xl shadow-[#4a5d4a]/30 relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-24 -mt-24 blur-3xl group-hover:bg-white/10 transition-colors duration-1000"></div>
+                       <h3 className="text-2xl font-serif italic border-b border-white/15 pb-6 tracking-wide">Tu Estrategia de Calma:</h3>
+                       <div className="space-y-6">
                           {report.quick_wins.map((win: string, i: number) => (
-                            <div key={i} className="flex gap-3 items-start">
-                              <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5 font-bold">{i+1}</span>
-                              <p className="text-xs opacity-95">{win}</p>
+                            <div key={i} className="flex gap-5 items-start group/item">
+                              <span className="bg-white text-[#4a5d4a] w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-1 font-bold shadow-xl shadow-black/10 transition-transform duration-300 group-hover/item:scale-110">{i+1}</span>
+                              <p className="text-[14px] md:text-[15px] opacity-90 leading-relaxed font-light">{win}</p>
                             </div>
                           ))}
                        </div>
                      </div>
                    )}
 
-                   {/* Cierre de Ventas Directo */}
-                   <div className="pt-6 text-center space-y-6">
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium text-[#3d4f3d] leading-relaxed px-4">{report.cta_message}</p>
+                   {/* CTA Final */}
+                   <div className="pt-10 text-center space-y-10 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
+                      <div className="space-y-5">
+                        <p className="text-lg font-medium text-[#3d4f3d] leading-relaxed italic px-6">{report.cta_message}</p>
                         {report.recommended_next_step && (
-                          <div className="inline-block px-5 py-2 bg-[#e8ede8] rounded-full">
-                            <p className="text-[10px] text-[#4a5d4a] uppercase tracking-widest font-bold">
+                          <div className="inline-block px-10 py-4 bg-[#f3f7f3] rounded-full border border-[#e8ede8] shadow-sm">
+                            <p className="text-[12px] text-[#4a5d4a] uppercase tracking-[0.3em] font-bold italic">
                               Recomendación: {report.recommended_next_step}
                             </p>
                           </div>
                         )}
                       </div>
+                      
                       <button 
                         onClick={() => window.open('https://wa.me/34664234565', '_blank')}
-                        className="w-full bg-[#4a5d4a] text-white py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-[#4a5d4a]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                        className="w-full bg-[#4a5d4a] text-white py-7 rounded-[2rem] font-bold uppercase tracking-[0.4em] text-[13px] shadow-2xl shadow-[#4a5d4a]/40 hover:bg-[#3d4f3d] active:scale-[0.96] transition-all flex items-center justify-center gap-5 relative group"
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.319 1.592 5.448 0 9.886-4.438 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.815-.981z"/></svg>
-                        RESERVAR MI CLASE DE PRUEBA
+                        <svg className="w-6 h-6 group-hover:scale-125 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.319 1.592 5.448 0 9.886-4.438 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.815-.981z"/></svg>
+                        RESERVAR MI CLASE POR WHATSAPP
                       </button>
-                      <button onClick={() => window.location.reload()} className="text-[9px] text-gray-400 uppercase tracking-widest underline decoration-gray-200 block mx-auto py-4">Repetir el Test</button>
+                      
+                      <button 
+                        onClick={() => window.location.reload()} 
+                        className="text-[11px] text-gray-400 uppercase tracking-[0.4em] border-b border-gray-100 inline-block mx-auto py-3 font-bold hover:text-[#4a5d4a] hover:border-[#4a5d4a] transition-all duration-300"
+                      >
+                        Reiniciar Auditoría
+                      </button>
                    </div>
                 </div>
               )}
@@ -345,22 +393,22 @@ const App: React.FC = () => {
         </div>
 
         {!isResultStep && (
-          <div className="flex gap-4 pt-6">
+          <div className="flex gap-4 pt-12">
             {currentStep.ui.showBack && (
               <button
                 onClick={() => setCurrentStepIndex(currentStepIndex - 1)}
-                className="flex-1 px-6 py-5 rounded-2xl border border-gray-200 text-gray-400 font-medium hover:bg-gray-50 transition-all flex items-center justify-center"
+                className="flex-1 px-7 py-6 rounded-2xl border border-gray-200 text-gray-400 font-medium hover:bg-gray-50 transition-all flex items-center justify-center group"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
+                <svg className="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
               </button>
             )}
             {currentStep.ui.showNext && (
               <button
                 onClick={handleNext}
-                className="flex-[4] px-6 py-5 rounded-2xl bg-[#4a5d4a] text-white font-semibold shadow-xl shadow-[#4a5d4a]/10 hover:bg-[#3d4f3d] transition-all active:scale-[0.98] flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]"
+                className="flex-[4] px-7 py-6 rounded-2xl bg-[#4a5d4a] text-white font-semibold shadow-xl shadow-[#4a5d4a]/15 hover:bg-[#3d4f3d] transition-all active:scale-[0.98] flex items-center justify-center gap-5 uppercase tracking-[0.3em] text-[12px] group"
               >
                 {currentStep.ui.ctaLabel}
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
+                <svg className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
               </button>
             )}
           </div>

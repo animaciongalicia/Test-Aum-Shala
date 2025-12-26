@@ -3,20 +3,25 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { QuizResults } from "../types.ts";
 
 export const generateRecommendation = async (results: QuizResults): Promise<string> => {
-  // Inicialización en cada llamada para capturar el estado fresco de process.env.API_KEY
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("CONFIG_ERROR: La API_KEY no está configurada en Vercel.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const responseSchema = {
     type: Type.OBJECT,
     properties: {
       summary: {
         type: Type.STRING,
-        description: "Análisis de 3-4 frases conectando el dolor del cliente con Aum Shala.",
+        description: "Análisis profundo de 4-5 frases sobre el estado del usuario.",
       },
       traffic_lights: {
         type: Type.OBJECT,
         properties: {
-          brand: { type: Type.STRING, description: "red, yellow o green (Estado Físico)" },
+          brand: { type: Type.STRING, description: "red, yellow o green (Cuerpo)" },
           web: { type: Type.STRING, description: "red, yellow o green (Mente)" },
           online: { type: Type.STRING, description: "red, yellow o green (Logística)" },
         },
@@ -35,60 +40,52 @@ export const generateRecommendation = async (results: QuizResults): Promise<stri
       quick_wins: {
         type: Type.ARRAY,
         items: { type: Type.STRING },
-        description: "3 acciones concretas de valor inmediato.",
+        description: "5 acciones detalladas e inmediatas.",
       },
       cta_message: {
         type: Type.STRING,
-        description: "Mensaje motivador final para reservar.",
+        description: "Mensaje de cierre potente y personalizado.",
       },
       recommended_next_step: {
         type: Type.STRING,
-        description: "El grupo/horario específico recomendado.",
+        description: "Recomendación específica de clase/horario.",
       },
     },
     required: ["summary", "traffic_lights", "swot", "quick_wins", "cta_message", "recommended_next_step"],
   };
 
   const systemInstruction = `
-Eres un Auditor Senior de Bienestar y Estratega de Ventas para Aum Shala Coruña (C/ Voluntariado, 3).
-Tu objetivo es transformar los datos de un test en un informe persuasivo que convenza al usuario de reservar una clase de prueba.
+Eres el Consultor Jefe de Bienestar de Aum Shala Coruña. 
+Tu objetivo es realizar una AUDITORÍA DE BIENESTAR PREMIUM basada en las respuestas del usuario.
+No des respuestas genéricas. Sé específico, elegante y persuasivo.
 
-Reglas Estratégicas:
-1. Habla en SEGUNDA PERSONA (tú).
-2. Tono: Elegante, directo, profesional y empático. Estilo 'Boutique Yoga'.
-3. Conecta el estrés y los dolores físicos con la facilidad de venir al centro de Coruña después del trabajo.
-4. Si el usuario tiene poca experiencia, enfatiza que los grupos son reducidos y cuidados.
-5. El JSON debe ser la ÚNICA salida.
+Directrices de contenido:
+1. Conecta los dolores específicos (espalda, estrés) con la práctica de yoga.
+2. Destaca que estamos en el centro de Coruña (C/ Voluntariado) para su conveniencia.
+3. El tono debe ser el de un estudio boutique: exclusivo, calmado pero orientado a resultados.
+4. Genera un plan de acción que parezca redactado por un experto humano.
+5. El resultado DEBE ser un JSON puro.
 `;
-
-  const userPrompt = `AUDITORÍA PARA: ${JSON.stringify(results)}`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: userPrompt,
+      contents: `DATOS DEL TEST: ${JSON.stringify(results)}`,
       config: {
-        systemInstruction: systemInstruction,
+        systemInstruction,
         responseMimeType: "application/json",
-        responseSchema: responseSchema,
-        temperature: 0, // Máxima estabilidad para evitar variaciones en Vercel
-        thinkingConfig: { thinkingBudget: 0 } // Desactivado para reducir latencia y fallos de streaming
+        responseSchema,
+        temperature: 0.2, // Un poco más de creatividad para el informe "pobre"
       }
     });
 
-    const rawText = response.text;
-    if (!rawText) throw new Error("Empty response from Gemini");
-
-    // Extracción robusta de JSON usando Regex para ignorar markdown o basura de red
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error("No JSON found in response:", rawText);
-      throw new Error("Invalid format");
-    }
-
+    const text = response.text || "";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("FORMAT_ERROR: La respuesta no es un JSON válido.");
+    
     return jsonMatch[0];
-  } catch (error) {
-    console.error("Gemini Critical Error:", error);
+  } catch (error: any) {
+    console.error("Gemini API Error:", error.message);
     throw error;
   }
 };
