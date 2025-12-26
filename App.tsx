@@ -12,8 +12,8 @@ const questionnaireData: Questionnaire = {
   "steps": [
     {
       "id": "step-1-dolor-dia",
-      "title": "Acabas el día fundida y tu cuerpo lo nota",
-      "description": "Si trabajas o te mueves por el centro, seguramente terminas el día con la espalda, cuello o cabeza cargados. Vamos a ver si te encaja soltar todo eso en Aum Shala.",
+      "title": "Acabas el día agotada y tu cuerpo lo nota",
+      "description": "Si trabajas o te mueves por el centro, seguramente terminas el día con la espalda, cuello o cabeza cargados. Vamos a ver si te encaja soltar todo eso en nuestra sala de Yoga - Aum Shala.",
       "fields": [
         {
           "name": "listo_empezar",
@@ -21,8 +21,8 @@ const questionnaireData: Questionnaire = {
           "label": "¿Te reconoces en esta situación?",
           "required": true,
           "options": [
-            { "value": "si", "label": "Sí, quiero ver si me encaja Aum Shala" },
-            { "value": "no_seguro", "label": "No lo sé, pero quiero mirar opciones" }
+            { "value": "si", "label": "Sí, quiero ver si me encaja en Yoga en Aum Shala" },
+            { "value": "no_seguro", "label": "No lo sé, pero quiero mirar opciones de Yoga" }
           ]
         }
       ],
